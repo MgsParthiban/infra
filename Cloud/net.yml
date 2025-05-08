@@ -1,1 +1,130 @@
-# Need to create the networking
+AWSTemplateFormatVersion: '2010-09-09'
+Description: VPC with private subnets, DB subnet group, security groups and environment-specific tagging
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - Dev
+      - Test
+      - Prod
+    Description: Environment name (Dev/Test/Prod)
+  Instance:
+    Type: String
+    Description: Instance identifier (optional freeform)
+
+  Region:
+    Type: String
+    Description: AWS region (used for tag only)
+
+  Type:
+    Type: String
+    AllowedValues:
+      - Smoke
+      - QA
+    Description: "Example: Smoke"
+  
+  Group: 
+    Type: String
+    Default: backend
+    Description: "Example: backend"
+  
+  FeatureName:
+    Type: String
+    Default: Injestion
+    Description: "Example: Injestion"
+
+Resources:
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-VPC"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Group
+          Value: !Ref Group
+        - Key: Feature
+          Value: !Ref FeatureName
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-PrivateSubnet1"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Group
+          Value: !Ref Group
+        - Key: Feature
+          Value: !Ref FeatureName
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-PrivateSubnet2'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Group
+          Value: !Ref Group
+        - Key: Feature
+          Value: !Ref FeatureName
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: !Sub '${Environment} DB subnet group'
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      DBSubnetGroupName: !Sub '${Environment}-DBSubnetGroup'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-DBSubnetGroup'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Group
+          Value: !Ref Group
+        - Key: Feature
+          Value: !Ref FeatureName
+
+  SecurityGroupVPCEndpointSQS:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: VPC Endpoint Interface - SQS
+      VpcId: !Ref VPC
+      GroupName: !Sub ub "${Instance}-${Environment}-${Type}-${Region}-SecurityGroupVPCEndpointSQS"
+      SecurityGroupEgress:
+        - Description: "Allow All outbound"
+          IpProtocol: -1
+          CidrIp: "0.0.0.0/0"
+        - Description: "Allow ALl Ipv6 outbound"
+          IpProtocol: -1
+          CidrIp: "::/0"
+      SecurityGroupIngress:
+        - Description: "Allo all inbound"
+          IpProtocol: -1
+          CidrIp: "0.0.0.0/0"
+        - Description: "Allow all inbound"
+          IpProtocol: -1
+          CidrIp: "::/0"
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-SecurityGroupVPCEndpointSQS'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Group
+          Value: !Ref Group
+        - Key: Feature
+          Value: !Ref FeatureName
+
