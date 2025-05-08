@@ -127,4 +127,26 @@ Resources:
           Value: !Ref Group
         - Key: Feature
           Value: !Ref FeatureName
+          
+ SQSVPCEndpoint:
+  Type: AWS::EC2::VPCEndpoint
+  Properties:
+    ServiceName: !Sub "com.amazonaws.${AWS::Region}.sqs"
+    VpcId: !Ref VPC
+    VpcEndpointType: Interface
+    SubnetIds:
+      - !Ref PrivateSubnet1
+      - !Ref PrivateSubnet2
+    SecurityGroupIds:
+      - !Ref SecurityGroupVPCEndpointSQS  # This should be defined separately
+    PrivateDnsEnabled: true
+    Tags:
+      - Key: Name
+        Value: !Sub "${Environment}-SQS-VPCEndpoint"
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: Group
+        Value: !Ref Group
+      - Key: Feature
+        Value: !Ref FeatureName
 
