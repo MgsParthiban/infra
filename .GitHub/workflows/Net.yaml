@@ -1,16 +1,60 @@
-name: test 
+name: Deploy CloudFormation Infra 1
 
-on: 
-  push:
-    branches: infra
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'Dev'
+      instance:
+        description: 'Instance'
+        required: true
+        default: 'my-instance'
+      region:
+        description: 'Region'
+        required: true
+        default: 'us-east-1'
+      type:
+        description: 'Type'
+        required: true
+        default: 'Smoke'
+      group:
+        description: 'Group'
+        required: true
+        default: 'Backend'
+      featureName:
+        description: 'Feature Name'
+        required: true
+        default: 'Injestion'
+
 jobs:
-  ci:
-   runs-on: ubuntu
-  steps:
-    - name:  checkout
-      uses: action/checkout@v2
-   
-    
-      
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
+      - name: Show files for debug
+        run: ls -R
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ github.event.inputs.region }}
+
+      - name: Deploy CloudFormation
+        run: |
+          aws cloudformation deploy \
+            --template-file Cloud/net.yml \
+            --stack-name my-app-stack-${{ github.event.inputs.environment }} \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides \
+              Environment=${{ github.event.inputs.environment }} \
+              Instance=${{ github.event.inputs.instance }} \
+              Region=${{ github.event.inputs.region }} \
+              Type=${{ github.event.inputs.type }} \
+              Group=${{ github.event.inputs.group }} \
+              FeatureName=${{ github.event.inputs.featureName }}
