@@ -110,14 +110,14 @@ Resources:
           CidrIp: "0.0.0.0/0"
         - Description: "Allow ALl Ipv6 outbound"
           IpProtocol: -1
-          CidrIp: "::/0"
+          CidrIpv6: "::/0"
       SecurityGroupIngress:
         - Description: "Allo all inbound"
           IpProtocol: -1
           CidrIp: "0.0.0.0/0"
         - Description: "Allow all inbound"
           IpProtocol: -1
-          CidrIp: "::/0"
+          CidrIpv6: "::/0"
       Tags:
         - Key: Name
           Value: !Sub '${Environment}-SecurityGroupVPCEndpointSQS'
