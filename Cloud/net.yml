@@ -103,7 +103,7 @@ Resources:
     Properties:
       GroupDescription: VPC Endpoint Interface - SQS
       VpcId: !Ref VPC
-      GroupName: !Sub ub "${Instance}-${Environment}-${Type}-${Region}-SecurityGroupVPCEndpointSQS"
+      GroupName: !Sub "${Instance}-${Environment}-${Type}-${Region}-SecurityGroupVPCEndpointSQS"
       SecurityGroupEgress:
         - Description: "Allow All outbound"
           IpProtocol: -1
