@@ -49,7 +49,7 @@ jobs:
       - name: Deploy CloudFormation Stack
         run: |
           aws cloudformation deploy \
-            --template-file net.yaml \
+            --template-file Cloud/net.yaml \
             --stack-name my-app-stack-${{ github.event.inputs.environment }} \
             --capabilities CAPABILITY_NAMED_IAM \
             --parameter-overrides \
