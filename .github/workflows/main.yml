@@ -60,6 +60,6 @@ jobs:
               Environment=${{ github.event.inputs.environment }} \
               Instance=${{ github.event.inputs.instance }} \
               Region=${{ github.event.inputs.region }} \
-              Type=${{ github.event.inputs.type }} \
+              Type=${{ github.event.inputs.type || 'Smoke' }} \
               Group=${{ github.event.inputs.group }} \
               FeatureName=${{ github.event.inputs.featureName }}
