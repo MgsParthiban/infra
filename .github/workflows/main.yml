@@ -1,9 +1,9 @@
 name: Deploy CloudFormation Infra 
 
 on:
-  #push:
-    #branches:
-      #- main
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       environment:
@@ -21,7 +21,7 @@ on:
       type:
         description: 'Type'
         required: true
-        default: 'Smoke'
+        default: 'QA'
       group:
         description: 'Group'
         required: true
