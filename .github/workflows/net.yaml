@@ -51,7 +51,7 @@ jobs:
       - name: Deploy CloudFormation
         run: |
           aws cloudformation deploy \
-            --template-file Cloud/net.yml \ 
+            --template-file CF/VPC-Setup.yml \ 
             --stack-name my-app-stack-${{ github.event.inputs.environment }} \
             --capabilities CAPABILITY_NAMED_IAM \
             --parameter-overrides \
