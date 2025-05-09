@@ -1,6 +1,9 @@
 name: Deploy CloudFormation Infra 
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       environment:
