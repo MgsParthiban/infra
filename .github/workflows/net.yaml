@@ -1,4 +1,4 @@
-name: Deploy CloudFormation Infra 1
+name: Deploy CF Infra 
 
 on:
   push:
