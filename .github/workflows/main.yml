@@ -57,7 +57,7 @@ jobs:
             --stack-name my-app-stack-${{ github.event.inputs.environment }} \
             --capabilities CAPABILITY_NAMED_IAM \
             --parameter-overrides \
-              Environment=${{ github.event.inputs.environment }} \
+              Environment=${{ github.event.inputs.environment || 'Test' }} \
               Instance=${{ github.event.inputs.instance }} \
               Region=${{ github.event.inputs.region }} \
               Type=${{ github.event.inputs.type || 'Smoke' }} \
