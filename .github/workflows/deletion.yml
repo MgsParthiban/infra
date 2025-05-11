@@ -53,11 +53,17 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ github.event.inputs.region }}
-          
-      - name: Stop Workflow (Stack Not Found)
+
+      - name: Inform User (Stack Not Found)
         run: |
-          echo "❌ Stack '${{ github.event.inputs.stack-name }}' not found. Failing the pipeline."
-          exit 1
+          echo "⚠️ Stack '${{ github.event.inputs.stack-name }}' not found in region '${{ github.event.inputs.region }}'."
+          echo "Please verify the stack name and region"
+          exit 0
+          
+      #- name: Stop Workflow (Stack Not Found)
+       # run: |
+        #  echo "❌ Stack '${{ github.event.inputs.stack-name }}' not found. Failing the pipeline."
+         # exit 1
 
   deploy:
     needs: check
