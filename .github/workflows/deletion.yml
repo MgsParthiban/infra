@@ -65,8 +65,8 @@ jobs:
         #  echo "❌ Stack '${{ github.event.inputs.stack-name }}' not found. Failing the pipeline."
          # exit 1
 
-  deploy:
-    needs: check
+  Delete:
+    needs: check-stack
     if: needs.check.outputs.stack_exists == 'true'
     runs-on: ubuntu-latest
     steps:
