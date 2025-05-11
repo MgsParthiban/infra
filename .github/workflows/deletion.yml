@@ -13,7 +13,7 @@ on:
 
 
 jobs:
-  check:
+  check-stack:
     runs-on: ubuntu-latest
     outputs:
       stack_exists: ${{ steps.check_stack.outputs.StackExists }}
@@ -42,8 +42,8 @@ jobs:
             echo "StackExists=true" >> $GITHUB_OUTPUT
           fi
   stop:
-    needs: check
-    if: needs.check.outputs.stack_exists == 'false'
+    needs: check-stack
+    if: needs.check-stack.outputs.stack_exists == 'false'
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
