@@ -1,53 +1,47 @@
-name: Delete CloudFormation Stack
+name: Check Stack and Deploy
 
 on:
   workflow_dispatch:
     inputs:
       stack-name:
-        description: "Enter the CloudFormation stack name"
-        required: true
-      region:
-        description: "Enter the AWS region"
+        description: 'CloudFormation Stack Name'
         required: true
 
 jobs:
-  delete-stack:
-    name: Check and Delete Stack
+  check:
     runs-on: ubuntu-latest
-
-    #env:
-     # AWS_REGION: ${{ github.event.inputs.region }}
-
+    outputs:
+      stack_exists: ${{ steps.check_stack.outputs.StackExists }}
     steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ github.event.inputs.region }}
-
       - name: Check if Stack Exists
         id: check_stack
         run: |
           set +e
           aws cloudformation describe-stacks --stack-name "${{ github.event.inputs.stack-name }}" > stack.json 2> err.log
           if grep -q "does not exist" err.log; then
-            echo "StackNotFound=true" >> $GITHUB_OUTPUT
+            echo "StackExists=false" >> $GITHUB_OUTPUT
           else
-            echo "StackNotFound=false" >> $GITHUB_OUTPUT
+            echo "StackExists=true" >> $GITHUB_OUTPUT
           fi
-
-      - name: Fail if Stack Not Found
-        if: steps.check_stack.outputs.StackNotFound == 'true'
+  stop:
+    needs: check
+    if: needs.check.outputs.stack_exists == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop Workflow (Stack Not Found)
         run: |
-          echo "❌ Stack '${{ github.event.inputs.stack-name }}' does not exist in region '${{ github.event.inputs.region }}'."
+          echo "❌ Stack '${{ github.event.inputs.stack-name }}' not found. Failing the pipeline."
           exit 1
 
-      - name: Delete CloudFormation Stack
-        if: steps.check_stack.outputs.StackNotFound == 'false'
+  deploy:
+    needs: check
+    if: needs.check.outputs.stack_exists == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Proceed with Deployment
         run: |
-          echo "✅ Stack found. Proceeding to delete..."
-          aws cloudformation delete-stack --stack-name "${{ github.event.inputs.stack-name }}"
-          echo "🕒 Waiting for stack deletion to complete..."
-          aws cloudformation wait stack-delete-complete --stack-name "${{ github.event.inputs.stack-name }}"
-          echo "✅ Stack '${{ github.event.inputs.stack-name }}' has been deleted successfully."
+          aws cloudformation delete-stack \
+            --stack-name ${{ github.event.inputs.stackName }}
+          echo "Stack found. Proceeding with deployment..."
+
+  
