@@ -1,4 +1,4 @@
-name: Check Stack and Deploy
+name: Check Stack and Delete the Stack
 
 on:
   workflow_dispatch:
