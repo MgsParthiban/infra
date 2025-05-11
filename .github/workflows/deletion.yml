@@ -59,7 +59,7 @@ jobs:
       - name: Proceed with Deployment
         run: |
           aws cloudformation delete-stack \
-            --stack-name ${{ github.event.inputs.stackName }}
+            --stack-name ${{ github.event.inputs.stack-name }}
           echo "Stack found. Proceeding with deployment..."
 
   
