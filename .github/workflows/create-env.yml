@@ -1,0 +1,30 @@
+name: Create Deployment Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      env_name:
+        description: 'Environment name to create (e.g., dev, test)'
+        required: true
+
+jobs:
+  create-environment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Show input
+        run: echo "Creating environment: ${{ github.event.inputs.env_name }}"
+
+      - name: Create GitHub Environment using REST API
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          REPO: ${{ github.repository }}
+          ENV_NAME: ${{ github.event.inputs.env_name }}
+        run: |
+          echo "Creating GitHub environment: $ENV_NAME"
+
+          curl -X PUT "https://api.github.com/repos/$REPO/environments/$ENV_NAME" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -d '{}'
