@@ -12,9 +12,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Show input
-        run: echo "Creating environment: ${{ github.event.inputs.env_name }}"
-
       - name: Create GitHub Environment using REST API
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
