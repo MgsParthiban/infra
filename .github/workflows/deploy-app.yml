@@ -7,7 +7,7 @@ on:
       environment:
         required: true
         type: choice
-        options: [Dev, Test, Prod]
+        options: [dev, Test, Prod]
 
       region:
         description: 'Region'
