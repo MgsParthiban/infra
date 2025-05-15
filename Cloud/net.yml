@@ -149,4 +149,18 @@ Resources:
           Value: !Ref Group
         - Key: Feature
           Value: !Ref FeatureName
+  Outputs:
+    VPC:
+      Value: !Ref VPC
+      Export:
+        Name: !Sub "${Environment}-VPC"
+  PrivateSubnet1:
+    Value: !Ref PrivateSubnet1
+  PrivateSubnet2:
+    Value: !Ref PrivateSubnet2
+  DBSubnetGroup:
+    Value: !Ref DBSubnetGroup
+    
+  
+
 
