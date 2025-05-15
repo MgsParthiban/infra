@@ -8,18 +8,18 @@ on:
         required: true
         type: choice
         options: [Dev, Test, Prod]
-        
+
       region:
         description: 'Region'
         required: true
         default: 'us-east-1'
 
 jobs:
-
   call-read-secrets:
     uses: ./.github/workflows/read-secrets.yml
     with:
       environment: ${{ github.event.inputs.environment }}
+      region: ${{ github.event.inputs.region }}
 
   deploy-network:
     needs: call-read-secrets
@@ -38,8 +38,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.REGION }}
-          #aws-region: us-east-1
+          aws-region: ${{ github.event.inputs.region }}
 
       - name: Deploy net.yaml
         run: |
@@ -51,7 +50,7 @@ jobs:
               Environment=${{ github.event.inputs.environment }} \
               Group=backend \
               FeatureName=Injestion \
-              Region=us-east-1 \
+              Region=${{ github.event.inputs.region }} \
               Instance=app \
               Type=QA
 
@@ -77,8 +76,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.REGION }}
-          #aws-region: us-east-1
+          aws-region: ${{ github.event.inputs.region }}
 
       - name: Deploy Aurora + RDS Proxy
         run: |
