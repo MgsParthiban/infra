@@ -9,7 +9,7 @@ on:
 
 jobs:
   get-secrets:
-    uses: ./.github/workflows/secrets.yaml
+    uses: ./.github/workflows/secrets-new.yaml
     with:
       env_name: ${{ github.event.inputs.env_name }}
     secrets: inherit  # Important to allow secrets to flow into reusable workflow
@@ -36,7 +36,7 @@ jobs:
           STACK_NAME="myapp-${ENV_INPUT}-rds"
 
           aws cloudformation deploy \
-            --template-file rds.yaml \
+            --template-file Cloud/rds.yaml \
             --stack-name "$STACK_NAME" \
             --capabilities CAPABILITY_NAMED_IAM \
             --parameter-overrides \
