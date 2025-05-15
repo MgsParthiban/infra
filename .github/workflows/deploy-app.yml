@@ -13,9 +13,9 @@ on:
       db-pass:
         required: true
         type: string
-     # api-key:
-      #  required: true
-       # type: string
+      api-key:
+        required: true
+        type: string
 
 jobs:
   deploy:
@@ -29,7 +29,7 @@ jobs:
         run: |
           echo "DB_USER: ${{ inputs.db-user }}"
           echo "DB_PASS: ${{ inputs.db-pass }}"
-        #  echo "API_KEY: ${{ inputs.api-key }}"
+          echo "API_KEY: ${{ inputs.api-key }}"
 
       - name: Deploy application
         run: |
