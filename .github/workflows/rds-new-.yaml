@@ -1,0 +1,50 @@
+name: Deploy RDS Stack
+
+on:
+  workflow_dispatch:
+    inputs:
+      env_name:
+        description: 'Environment name (e.g., dev, test)'
+        required: true
+
+jobs:
+  get-secrets:
+    uses: ./.github/workflows/secrets.yaml
+    with:
+      env_name: ${{ github.event.inputs.env_name }}
+    secrets: inherit  # Important to allow secrets to flow into reusable workflow
+
+  deploy:
+    needs: get-secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy RDS CloudFormation Stack
+        run: |
+          ENV_INPUT="${{ github.event.inputs.env_name }}"
+          ENV_CAP="${ENV_INPUT^}"
+          STACK_NAME="myapp-${ENV_INPUT}-rds"
+
+          aws cloudformation deploy \
+            --template-file rds.yaml \
+            --stack-name "$STACK_NAME" \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides \
+              Environment=$ENV_CAP \
+              DBUser=${{ needs.get-secrets.outputs.db_user }} \
+              DBPassword=${{ needs.get-secrets.outputs.db_password }} \
+              DBName=mydatabase \
+              DBSubnetGroupName=my-subnet-group \
+              VpcId=vpc-xxxxxxxx \
+              PrivateSubnet1=subnet-aaaaaaa \
+              PrivateSubnet2=subnet-bbbbbbb
