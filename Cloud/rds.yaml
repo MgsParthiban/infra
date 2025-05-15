@@ -1,75 +1,127 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Aurora MySQL Cluster with RDS Proxy
+Description: 'RDS Aurora Serverless Cluster and RDS Proxy'
 
 Parameters:
   Environment:
     Type: String
-  Group:
-    Type: String
-  FeatureName:
-    Type: String
-  DBName:
-    Type: String
+    Description: Deployment environment
+    AllowedValues:
+      - Dev
+      - Test
+      - Prod
+    Default: Dev
+
   DBUser:
     Type: String
-    NoEcho: true
+    Description: The database master username
+
   DBPassword:
     Type: String
+    Description: The database master password
     NoEcho: true
+
+  DBName:
+    Type: String
+    Description: The database name
+    Default: mydatabase
+
   DBSubnetGroupName:
     Type: String
+    Description: Subnet group for the database
+
   VpcId:
-    Type: AWS::EC2::VPC::Id
+    Type: String
+    Description: VPC Id
+
   PrivateSubnet1:
-    Type: AWS::EC2::Subnet::Id
+    Type: String
+    Description: Private Subnet 1
+
   PrivateSubnet2:
-    Type: AWS::EC2::Subnet::Id
+    Type: String
+    Description: Private Subnet 2
 
 Resources:
-  DBCluster:
+
+  AuroraDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for Aurora DB
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  AuroraCluster:
     Type: AWS::RDS::DBCluster
     Properties:
       Engine: aurora-mysql
-      EngineMode: provisioned
+      EngineMode: serverless
+      DatabaseName: !Ref DBName
       MasterUsername: !Ref DBUser
       MasterUserPassword: !Ref DBPassword
       DBSubnetGroupName: !Ref DBSubnetGroupName
-      VpcSecurityGroupIds:
-        - !Ref RDSSecurityGroup
-      DatabaseName: !Ref DBName
-      BackupRetentionPeriod: 1
-      PreferredBackupWindow: 03:00-04:00
-      PreferredMaintenanceWindow: sun:05:00-sun:06:00
+      VpcSecurityGroupIds: []  # add your security groups here if any
+      ScalingConfiguration:
+        AutoPause: true
+        MaxCapacity: 2
+        MinCapacity: 1
+        SecondsUntilAutoPause: 300
+      DeletionProtection: false
 
-  DBInstance1:
+  AuroraDBInstance:
     Type: AWS::RDS::DBInstance
     Properties:
-      DBClusterIdentifier: !Ref DBCluster
+      DBClusterIdentifier: !Ref AuroraCluster
       DBInstanceClass: db.t3.medium
       Engine: aurora-mysql
       PubliclyAccessible: false
-
-  RDSSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allow RDS access in VPC
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 3306
-          ToPort: 3306
-          CidrIp: 10.0.0.0/16  # Adjust for your VPC CIDR
 
   RDSProxyRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
               Service: rds.amazonaws.com
             Action: sts:AssumeRole
-      Path: /
       Policies:
-        - PolicyName: SecretsManagerAccess
+        - PolicyName: RDSProxyPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource: '*'
+
+  RDSProxy:
+    Type: AWS::RDS::DBProxy
+    Properties:
+      DBProxyName: !Sub "myapp-${Environment}-rds-proxy"
+      EngineFamily: MYSQL
+      Auth:
+        - AuthScheme: SECRETS
+          SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:myapp/${Environment}/secrets"
+          IAMAuth: DISABLED
+      RoleArn: !GetAtt RDSProxyRole.Arn
+      VpcSubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      VpcSecurityGroupIds: []  # add your security groups here if any
+      RequireTLS: true
+
+Outputs:
+  DBClusterArn:
+    Description: "ARN of the Aurora DB Cluster"
+    Value: !Ref AuroraCluster
+
+  DBProxyArn:
+    Description: "ARN of the RDS Proxy"
+    Value: !Ref RDSProxy
+
+  DBSubnetGroupName:
+    Description: "DB Subnet Group Name"
+    Value: !Ref DBSubnetGroupName
