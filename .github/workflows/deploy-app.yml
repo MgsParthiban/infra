@@ -1,37 +1,92 @@
 # .github/workflows/deploy-app.yml
-name: Deploy Application
+name: Deploy Full Stack
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       environment:
         required: true
-        type: string
-      db-user:
-        required: true
-        type: string
-      db-pass:
-        required: true
-        type: string
-      api-key:
-        required: true
-        type: string
+        type: choice
+        options: [Dev, Test, Prod]
 
 jobs:
-  deploy:
+
+  call-read-secrets:
+    uses: ./.github/workflows/read-secrets.yml
+    with:
+      environment: ${{ github.event.inputs.environment }}
+
+  deploy-network:
+    needs: call-read-secrets
+    runs-on: ubuntu-latest
+    outputs:
+      VpcId: ${{ steps.outputs.outputs.VpcId }}
+      PrivateSubnet1: ${{ steps.outputs.outputs.PrivateSubnet1 }}
+      PrivateSubnet2: ${{ steps.outputs.outputs.PrivateSubnet2 }}
+      DBSubnetGroupName: ${{ steps.outputs.outputs.DBSubnetGroupName }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy net.yaml
+        run: |
+          aws cloudformation deploy \
+            --stack-name myapp-${{ github.event.inputs.environment }}-vpc \
+            --template-file net.yaml \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides \
+              Environment=${{ github.event.inputs.environment }} \
+              Group=backend \
+              FeatureName=Injestion \
+              Region=us-east-1 \
+              Instance=app \
+              Type=QA
+
+      - name: Extract Outputs
+        id: outputs
+        run: |
+          outputs=$(aws cloudformation describe-stacks --stack-name myapp-${{ github.event.inputs.environment }}-vpc --query "Stacks[0].Outputs" --output json)
+
+          echo "VpcId=$(echo $outputs | jq -r '.[] | select(.OutputKey==\"VPC\") | .OutputValue')" >> $GITHUB_OUTPUT
+          echo "PrivateSubnet1=$(echo $outputs | jq -r '.[] | select(.OutputKey==\"PrivateSubnet1\") | .OutputValue')" >> $GITHUB_OUTPUT
+          echo "PrivateSubnet2=$(echo $outputs | jq -r '.[] | select(.OutputKey==\"PrivateSubnet2\") | .OutputValue')" >> $GITHUB_OUTPUT
+          echo "DBSubnetGroupName=$(echo $outputs | jq -r '.[] | select(.OutputKey==\"DBSubnetGroup\") | .OutputValue')" >> $GITHUB_OUTPUT
+
+  deploy-rds:
+    needs: [call-read-secrets, deploy-network]
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Display secrets (for debug only - REMOVE IN PRODUCTION)
-        run: |
-          echo "DB_USER: ${{ inputs.db-user }}"
-          echo "DB_PASS: ${{ inputs.db-pass }}"
-          echo "API_KEY: ${{ inputs.api-key }}"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-      - name: Deploy application
+      - name: Deploy Aurora + RDS Proxy
         run: |
-          echo "Deploying to ${{ inputs.environment }} environment with provided secrets"
-          # Here you would use the secrets to configure your deployment
+          aws cloudformation deploy \
+            --stack-name myapp-${{ github.event.inputs.environment }}-rds \
+            --template-file rds.yaml \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides \
+              Environment=${{ github.event.inputs.environment }} \
+              Group=backend \
+              FeatureName=Injestion \
+              DBUser="${{ needs.call-read-secrets.outputs.db-user }}" \
+              DBPassword="${{ needs.call-read-secrets.outputs.db-password }}" \
+              DBName=mydatabase \
+              DBSubnetGroupName="${{ needs.deploy-network.outputs.DBSubnetGroupName }}" \
+              VpcId="${{ needs.deploy-network.outputs.VpcId }}" \
+              PrivateSubnet1="${{ needs.deploy-network.outputs.PrivateSubnet1 }}" \
+              PrivateSubnet2="${{ needs.deploy-network.outputs.PrivateSubnet2 }}"
