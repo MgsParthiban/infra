@@ -5,7 +5,7 @@ Parameters:
   Environment:
     Type: String
     AllowedValues:
-      - Dev
+      - dev
       - Test
       - Prod
     Description: Environment name (Dev/Test/Prod)
