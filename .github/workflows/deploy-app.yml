@@ -8,6 +8,11 @@ on:
         required: true
         type: choice
         options: [Dev, Test, Prod]
+        
+      region:
+        description: 'Region'
+        required: true
+        default: 'us-east-1'
 
 jobs:
 
