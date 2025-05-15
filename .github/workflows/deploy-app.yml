@@ -1,0 +1,37 @@
+# .github/workflows/deploy-app.yml
+name: Deploy Application
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      db-user:
+        required: true
+        type: string
+      db-pass:
+        required: true
+        type: string
+     # api-key:
+      #  required: true
+       # type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Display secrets (for debug only - REMOVE IN PRODUCTION)
+        run: |
+          echo "DB_USER: ${{ inputs.db-user }}"
+          echo "DB_PASS: ${{ inputs.db-pass }}"
+        #  echo "API_KEY: ${{ inputs.api-key }}"
+
+      - name: Deploy application
+        run: |
+          echo "Deploying to ${{ inputs.environment }} environment with provided secrets"
+          # Here you would use the secrets to configure your deployment
