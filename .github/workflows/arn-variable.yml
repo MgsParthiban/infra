@@ -1,3 +1,4 @@
+name: arn-variable
 on:
   workflow_dispatch:
     inputs:
